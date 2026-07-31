@@ -1,6 +1,11 @@
-from algorithms.rsa import RSA
-from algorithms.ecdsa import ECDSA
-from algorithms.mldsa import MLDSA
+import json
+from dataclasses import asdict
+
+from src.algorithms.rsa import RSA
+from src.algorithms.ecdsa import ECDSA
+from src.algorithms.mldsa import MLDSA
+
+from src.benchmarks.runner import benchmark_algorithm
 
 
 algorithms = [
@@ -10,5 +15,20 @@ algorithms = [
 ]
 
 
+results = []
+
 for algorithm in algorithms:
-    print(type(algorithm).__name__)
+    result = benchmark_algorithm(algorithm)
+    results.append(result)
+
+
+for result in results:
+    print(result)
+
+
+with open("results/benchmark_results.json", "w") as file:
+    json.dump(
+        [asdict(result) for result in results],
+        file,
+        indent=4
+    )

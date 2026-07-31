@@ -8,9 +8,9 @@ class CryptoAlgorithm(ABC):
         pass
 
     @abstractmethod
-    def sign(self, message):
+    def sign(self, message, private_key):
         pass
 
     @abstractmethod
-    def verify(self, message, signature):
+    def verify(self, message, signature, public_key):
         pass
