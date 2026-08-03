@@ -1,3 +1,4 @@
+from src.analysis.security import get_security_info
 import json
 
 
@@ -11,10 +12,21 @@ def generate_report(results):
 
     for result in results:
 
+        security = get_security_info(
+            result["algorithm"]
+        )
+
         print("=" * 40)
 
         print(f"Algorithm: {result['algorithm']}")
         print(f"Benchmark runs: {result['runs']}")
+
+        print("\nSecurity:")
+
+        print(f"Family: {security['family']}")
+        print(f"Security basis: {security['security_basis']}")
+        print(f"Quantum resistant: {security['quantum_resistant']}")
+        print(f"NIST status: {security['nist_status']}")
 
         print("\nPerformance:")
 
