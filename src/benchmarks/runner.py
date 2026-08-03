@@ -1,4 +1,5 @@
 import time
+import statistics
 
 from src.benchmarks.metrics import BenchmarkResult
 
@@ -32,48 +33,59 @@ def get_size(obj):
     return 0
 
 
-def benchmark_algorithm(algorithm):
+def benchmark_algorithm(algorithm, runs=10):
 
     message = b"Benchmark message"
 
-    # Key generation benchmark
-    start = time.perf_counter()
+    keygen_times = []
+    sign_times = []
+    verify_times = []
 
-    public_key, private_key = algorithm.generate_keys()
+    public_key = None
+    private_key = None
+    signature = None
 
-    end = time.perf_counter()
+    for _ in range(runs):
 
-    keygen_time = end - start
+        start = time.perf_counter()
 
+        public_key, private_key = algorithm.generate_keys()
 
-    # Signing benchmark
-    start = time.perf_counter()
+        end = time.perf_counter()
 
-    signature = algorithm.sign(message, private_key)
-
-    end = time.perf_counter()
-
-    sign_time = end - start
+        keygen_times.append(end - start)
 
 
-    # Verification benchmark
-    start = time.perf_counter()
+        start = time.perf_counter()
 
-    algorithm.verify(message, signature, public_key)
+        signature = algorithm.sign(message, private_key)
 
-    end = time.perf_counter()
+        end = time.perf_counter()
 
-    verify_time = end - start
+        sign_times.append(end - start)
+
+
+        start = time.perf_counter()
+
+        algorithm.verify(message, signature, public_key)
+
+        end = time.perf_counter()
+
+        verify_times.append(end - start)
 
 
     result = BenchmarkResult(
         algorithm=algorithm.__class__.__name__,
-        keygen_time=keygen_time,
-        sign_time=sign_time,
-        verify_time=verify_time,
+        keygen_time=sum(keygen_times) / runs,
+        sign_time=sum(sign_times) / runs,
+        verify_time=sum(verify_times) / runs,
+        keygen_std=statistics.stdev(keygen_times),
+        sign_std=statistics.stdev(sign_times),
+        verify_std=statistics.stdev(verify_times),
         public_key_size=get_size(public_key),
         private_key_size=get_size(private_key),
-        signature_size=len(signature)
+        signature_size=len(signature),
+        runs=runs
     )
 
     return result
