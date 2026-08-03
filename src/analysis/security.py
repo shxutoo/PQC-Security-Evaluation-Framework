@@ -19,6 +19,13 @@ SECURITY_INFO = {
         "security_basis": "Module lattice problem",
         "quantum_resistant": True,
         "nist_status": "NIST standardized post-quantum signature"
+    },
+
+    "SPHINCS": {
+        "family": "Hash-based cryptography",
+        "security_basis": "Hash function security",
+        "quantum_resistant": True,
+        "nist_status": "NIST standardized post-quantum signature"
     }
 
 }

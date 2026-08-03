@@ -4,6 +4,7 @@ from dataclasses import asdict
 from src.algorithms.rsa import RSA
 from src.algorithms.ecdsa import ECDSA
 from src.algorithms.mldsa import MLDSA
+from src.algorithms.sphincs import SPHINCS
 
 from src.benchmarks.runner import benchmark_algorithm
 
@@ -11,7 +12,8 @@ from src.benchmarks.runner import benchmark_algorithm
 algorithms = [
     RSA(),
     ECDSA(),
-    MLDSA()
+    MLDSA(),
+    SPHINCS()
 ]
 
 
