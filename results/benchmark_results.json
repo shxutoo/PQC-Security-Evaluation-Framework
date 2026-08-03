@@ -1,29 +1,29 @@
 [
     {
         "algorithm": "RSA",
-        "keygen_time": 7.130001904442906e-07,
-        "sign_time": 3.720015229191631e-07,
-        "verify_time": 3.339991963002831e-07,
-        "public_key_size": 14,
-        "private_key_size": 15,
-        "signature_size": 13
+        "keygen_time": 0.019201664000320307,
+        "sign_time": 0.0008183439995264052,
+        "verify_time": 3.0406999940169044e-05,
+        "public_key_size": 294,
+        "private_key_size": 1219,
+        "signature_size": 256
     },
     {
         "algorithm": "ECDSA",
-        "keygen_time": 7.100024959072471e-07,
-        "sign_time": 3.7000063457526267e-07,
-        "verify_time": 2.399974619038403e-07,
-        "public_key_size": 16,
-        "private_key_size": 17,
-        "signature_size": 15
+        "keygen_time": 6.1179000113043e-05,
+        "sign_time": 0.001776993999555998,
+        "verify_time": 7.39029992473661e-05,
+        "public_key_size": 91,
+        "private_key_size": 138,
+        "signature_size": 71
     },
     {
         "algorithm": "MLDSA",
-        "keygen_time": 4.0200029616244137e-07,
-        "sign_time": 2.220003807451576e-07,
-        "verify_time": 2.440028765704483e-07,
-        "public_key_size": 16,
-        "private_key_size": 17,
-        "signature_size": 15
+        "keygen_time": 0.00017415699949197005,
+        "sign_time": 0.0008030869994399836,
+        "verify_time": 0.00014412000018637627,
+        "public_key_size": 1952,
+        "private_key_size": 4032,
+        "signature_size": 3309
     }
 ]

@@ -2,6 +2,35 @@ import time
 
 from src.benchmarks.metrics import BenchmarkResult
 
+from cryptography.hazmat.primitives import serialization
+
+
+def get_size(obj):
+
+    if isinstance(obj, bytes):
+        return len(obj)
+
+    if hasattr(obj, "private_bytes"):
+
+        return len(
+            obj.private_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption()
+            )
+        )
+
+    if hasattr(obj, "public_bytes"):
+
+        return len(
+            obj.public_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            )
+        )
+
+    return 0
+
 
 def benchmark_algorithm(algorithm):
 
@@ -42,8 +71,8 @@ def benchmark_algorithm(algorithm):
         keygen_time=keygen_time,
         sign_time=sign_time,
         verify_time=verify_time,
-        public_key_size=len(public_key),
-        private_key_size=len(private_key),
+        public_key_size=get_size(public_key),
+        private_key_size=get_size(private_key),
         signature_size=len(signature)
     )
 
