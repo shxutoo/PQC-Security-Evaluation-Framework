@@ -48,11 +48,33 @@ def find_largest(results, metric):
     )
 
 
+def filter_pqc_algorithms(results):
+
+    pqc_results = []
+
+    for result in results:
+
+        security = get_security_info(
+            result["algorithm"]
+        )
+
+        if security["quantum_resistant"]:
+            pqc_results.append(result)
+
+    return pqc_results
+
+
+def calculate_overhead(value, baseline):
+
+    return value / baseline
+
+
 def generate_summary(results):
 
     print("=" * 40)
     print("Comparative Summary")
     print("=" * 40)
+
 
     print("\nPerformance:")
 
@@ -115,23 +137,73 @@ def generate_summary(results):
 
     print("\nSecurity:")
 
-    pqc_algorithms = []
-
-    for result in results:
-
-        security = get_security_info(
-            result["algorithm"]
-        )
-
-        if security["quantum_resistant"]:
-            pqc_algorithms.append(
-                result["algorithm"]
-            )
-
+    pqc_results = filter_pqc_algorithms(results)
 
     print(
         "Quantum-resistant algorithms: "
-        + ", ".join(pqc_algorithms)
+        + ", ".join(
+            result["algorithm"]
+            for result in pqc_results
+        )
+    )
+
+
+    print("\nPost-Quantum Analysis:")
+
+
+    algorithm, value = find_fastest(
+        pqc_results,
+        "keygen_time"
+    )
+
+    print(
+        f"Fastest PQC key generation: "
+        f"{algorithm} ({value:.6f}s)"
+    )
+
+
+    algorithm, value = find_fastest(
+        pqc_results,
+        "sign_time"
+    )
+
+    print(
+        f"Fastest PQC signing: "
+        f"{algorithm} ({value:.6f}s)"
+    )
+
+
+    algorithm, value = find_fastest(
+        pqc_results,
+        "verify_time"
+    )
+
+    print(
+        f"Fastest PQC verification: "
+        f"{algorithm} ({value:.6f}s)"
+    )
+
+
+    mldsa = next(
+        result for result in pqc_results
+        if result["algorithm"] == "MLDSA"
+    )
+
+    sphincs = next(
+        result for result in pqc_results
+        if result["algorithm"] == "SPHINCS"
+    )
+
+
+    overhead = calculate_overhead(
+        sphincs["signature_size"],
+        mldsa["signature_size"]
+    )
+
+
+    print(
+        "\nSPHINCS signature overhead compared "
+        f"with MLDSA: {overhead:.2f}x larger"
     )
 
 
@@ -140,4 +212,3 @@ if __name__ == "__main__":
     results = load_results()
 
     generate_summary(results)
-
