@@ -7,6 +7,7 @@ from src.algorithms.mldsa import MLDSA
 from src.algorithms.sphincs import SPHINCS
 
 from src.benchmarks.runner import benchmark_algorithm
+from src.analysis.export import generate_exports
 
 
 algorithms = [
@@ -19,18 +20,26 @@ algorithms = [
 
 results = []
 
+
 for algorithm in algorithms:
+
     result = benchmark_algorithm(algorithm)
+
     results.append(result)
 
 
 for result in results:
+
     print(result)
 
 
 with open("results/benchmark_results.json", "w") as file:
+
     json.dump(
         [asdict(result) for result in results],
         file,
         indent=4
     )
+
+
+generate_exports()

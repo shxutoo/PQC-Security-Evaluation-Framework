@@ -3,19 +3,19 @@ Comparative Summary
 ========================================
 
 Performance:
-Fastest key generation: ECDSA (0.000023s)
-Fastest signing: ECDSA (0.000401s)
-Fastest verification: SPHINCS (0.000002s)
+Fastest key generation: ECDSA (0.000031s)
+Fastest signing: ECDSA (0.000593s)
+Fastest verification: SPHINCS (0.000005s)
 
 Sizes:
-Smallest signature: ECDSA (72 bytes)
+Smallest signature: ECDSA (71 bytes)
 Largest signature: SPHINCS (17088 bytes)
 
 Security:
 Quantum-resistant algorithms: MLDSA, SPHINCS
 
 Post-Quantum Analysis:
-Fastest PQC key generation: MLDSA (0.000154s)
-Fastest PQC signing: MLDSA (0.000855s)
-Fastest PQC verification: SPHINCS (0.000002s)
+Fastest PQC key generation: MLDSA (0.000226s)
+Fastest PQC signing: MLDSA (0.000748s)
+Fastest PQC verification: SPHINCS (0.000005s)
 SPHINCS signature overhead compared with MLDSA: 5.16x larger
