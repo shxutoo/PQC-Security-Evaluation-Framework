@@ -1,0 +1,47 @@
+{
+    "performance": {
+        "fastest_key_generation": {
+            "algorithm": "ECDSA",
+            "value": 2.312439937668387e-05
+        },
+        "fastest_signing": {
+            "algorithm": "ECDSA",
+            "value": 0.0004012105000583688
+        },
+        "fastest_verification": {
+            "algorithm": "SPHINCS",
+            "value": 2.415000199107453e-06
+        }
+    },
+    "sizes": {
+        "smallest_signature": {
+            "algorithm": "ECDSA",
+            "value": 72
+        },
+        "largest_signature": {
+            "algorithm": "SPHINCS",
+            "value": 17088
+        }
+    },
+    "security": {
+        "quantum_resistant_algorithms": [
+            "MLDSA",
+            "SPHINCS"
+        ]
+    },
+    "post_quantum_analysis": {
+        "fastest_pqc_key_generation": {
+            "algorithm": "MLDSA",
+            "value": 0.00015412300017487724
+        },
+        "fastest_pqc_signing": {
+            "algorithm": "MLDSA",
+            "value": 0.0008550646001822315
+        },
+        "fastest_pqc_verification": {
+            "algorithm": "SPHINCS",
+            "value": 2.415000199107453e-06
+        },
+        "sphincs_signature_overhead_vs_mldsa": 5.164097914777878
+    }
+}

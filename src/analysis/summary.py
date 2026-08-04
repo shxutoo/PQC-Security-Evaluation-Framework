@@ -16,10 +16,10 @@ def find_fastest(results, metric):
         key=lambda x: x[metric]
     )
 
-    return (
-        fastest["algorithm"],
-        fastest[metric]
-    )
+    return {
+        "algorithm": fastest["algorithm"],
+        "value": fastest[metric]
+    }
 
 
 def find_smallest(results, metric):
@@ -29,10 +29,10 @@ def find_smallest(results, metric):
         key=lambda x: x[metric]
     )
 
-    return (
-        smallest["algorithm"],
-        smallest[metric]
-    )
+    return {
+        "algorithm": smallest["algorithm"],
+        "value": smallest[metric]
+    }
 
 
 def find_largest(results, metric):
@@ -42,10 +42,10 @@ def find_largest(results, metric):
         key=lambda x: x[metric]
     )
 
-    return (
-        largest["algorithm"],
-        largest[metric]
-    )
+    return {
+        "algorithm": largest["algorithm"],
+        "value": largest[metric]
+    }
 
 
 def filter_pqc_algorithms(results):
@@ -71,118 +71,7 @@ def calculate_overhead(value, baseline):
 
 def generate_summary(results):
 
-    print("=" * 40)
-    print("Comparative Summary")
-    print("=" * 40)
-
-
-    print("\nPerformance:")
-
-    algorithm, value = find_fastest(
-        results,
-        "keygen_time"
-    )
-
-    print(
-        f"Fastest key generation: "
-        f"{algorithm} ({value:.6f}s)"
-    )
-
-
-    algorithm, value = find_fastest(
-        results,
-        "sign_time"
-    )
-
-    print(
-        f"Fastest signing: "
-        f"{algorithm} ({value:.6f}s)"
-    )
-
-
-    algorithm, value = find_fastest(
-        results,
-        "verify_time"
-    )
-
-    print(
-        f"Fastest verification: "
-        f"{algorithm} ({value:.6f}s)"
-    )
-
-
-    print("\nSizes:")
-
-    algorithm, value = find_smallest(
-        results,
-        "signature_size"
-    )
-
-    print(
-        f"Smallest signature: "
-        f"{algorithm} ({value} bytes)"
-    )
-
-
-    algorithm, value = find_largest(
-        results,
-        "signature_size"
-    )
-
-    print(
-        f"Largest signature: "
-        f"{algorithm} ({value} bytes)"
-    )
-
-
-    print("\nSecurity:")
-
     pqc_results = filter_pqc_algorithms(results)
-
-    print(
-        "Quantum-resistant algorithms: "
-        + ", ".join(
-            result["algorithm"]
-            for result in pqc_results
-        )
-    )
-
-
-    print("\nPost-Quantum Analysis:")
-
-
-    algorithm, value = find_fastest(
-        pqc_results,
-        "keygen_time"
-    )
-
-    print(
-        f"Fastest PQC key generation: "
-        f"{algorithm} ({value:.6f}s)"
-    )
-
-
-    algorithm, value = find_fastest(
-        pqc_results,
-        "sign_time"
-    )
-
-    print(
-        f"Fastest PQC signing: "
-        f"{algorithm} ({value:.6f}s)"
-    )
-
-
-    algorithm, value = find_fastest(
-        pqc_results,
-        "verify_time"
-    )
-
-    print(
-        f"Fastest PQC verification: "
-        f"{algorithm} ({value:.6f}s)"
-    )
-
 
     mldsa = next(
         result for result in pqc_results
@@ -195,20 +84,89 @@ def generate_summary(results):
     )
 
 
-    overhead = calculate_overhead(
-        sphincs["signature_size"],
-        mldsa["signature_size"]
-    )
+    summary = {
+
+        "performance": {
+
+            "fastest_key_generation": find_fastest(
+                results,
+                "keygen_time"
+            ),
+
+            "fastest_signing": find_fastest(
+                results,
+                "sign_time"
+            ),
+
+            "fastest_verification": find_fastest(
+                results,
+                "verify_time"
+            )
+        },
 
 
-    print(
-        "\nSPHINCS signature overhead compared "
-        f"with MLDSA: {overhead:.2f}x larger"
-    )
+        "sizes": {
+
+            "smallest_signature": find_smallest(
+                results,
+                "signature_size"
+            ),
+
+            "largest_signature": find_largest(
+                results,
+                "signature_size"
+            )
+        },
+
+
+        "security": {
+
+            "quantum_resistant_algorithms": [
+                result["algorithm"]
+                for result in pqc_results
+            ]
+
+        },
+
+
+        "post_quantum_analysis": {
+
+            "fastest_pqc_key_generation": find_fastest(
+                pqc_results,
+                "keygen_time"
+            ),
+
+            "fastest_pqc_signing": find_fastest(
+                pqc_results,
+                "sign_time"
+            ),
+
+            "fastest_pqc_verification": find_fastest(
+                pqc_results,
+                "verify_time"
+            ),
+
+            "sphincs_signature_overhead_vs_mldsa":
+                calculate_overhead(
+                    sphincs["signature_size"],
+                    mldsa["signature_size"]
+                )
+
+        }
+
+    }
+
+
+    return summary
 
 
 if __name__ == "__main__":
 
     results = load_results()
 
-    generate_summary(results)
+    summary = generate_summary(results)
+
+    print(json.dumps(
+        summary,
+        indent=4
+    ))
