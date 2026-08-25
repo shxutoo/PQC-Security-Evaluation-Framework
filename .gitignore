@@ -216,3 +216,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local backups
+src/gui_backup/
+src/gui_backup_final/
+src/analysis/*_backup.py
+
+# Generated runtime output
+results/benchmark_metadata.json
+results/reports/
