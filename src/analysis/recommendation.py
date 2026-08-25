@@ -1,76 +1,81 @@
 from src.analysis.security import get_security_info
 
 
-DEFAULT_WEIGHTS = {
-    "signing": 0.20,
-    "verification": 0.15,
-    "signature_size": 0.15,
-    "key_generation": 0.10,
-    "security": 0.40
-}
-
-
-def normalize_weights(weights):
-    """
-    Normalize weights so their total equals 1.0.
-    """
-
-    total = sum(weights.values())
-
-    if total <= 0:
-        raise ValueError(
-            "At least one weight must be greater than zero."
-        )
-
-    return {
-        key: value / total
-        for key, value in weights.items()
-    }
+REQUIREMENT_KEYS = (
+    "security",
+    "signing",
+    "verification",
+    "signature_size",
+    "key_generation",
+)
 
 
 def normalize_score(value, values):
     """
-    Convert a metric value into a 0-100 score.
-    Lower values receive higher scores.
+    Convert a lower-is-better measurement to a 0-100 relative score.
+    The best measured candidate receives 100.
     """
+    if not values:
+        return 0.0
 
     best = min(values)
 
     if value == 0:
         return 100.0
 
-    return (best / value) * 100
+    return (best / value) * 100.0
 
 
-def score_candidates(
-    results,
-    weights=None
-):
+def build_weights(selected_requirements):
     """
-    Score all quantum-resistant candidates.
+    Checkboxes are binary inclusion controls.
 
-    weights:
-        Optional dictionary controlling the importance
-        of each performance metric.
+    Every selected requirement receives equal weight, so the behavior is easy
+    to explain and reproduce in the thesis. Unselected requirements receive 0.
+
+    Example:
+        ["signing", "verification"] ->
+        {"signing": 0.5, "verification": 0.5}
     """
+    selected = [
+        key
+        for key in selected_requirements or []
+        if key in REQUIREMENT_KEYS
+    ]
 
-    if not results:
+    # Preserve order while removing duplicates.
+    selected = list(dict.fromkeys(selected))
+
+    if not selected:
+        return {}
+
+    weight = 1.0 / len(selected)
+
+    return {
+        key: weight
+        for key in selected
+    }
+
+
+def score_candidates(results, selected_requirements):
+    """
+    Rank only quantum-resistant candidates.
+
+    Security is intentionally an eligibility condition as well as a displayed
+    score. ML-DSA and SPHINCS are both treated as quantum-resistant candidates,
+    so the security component does not distinguish them from each other.
+    """
+    weights = build_weights(selected_requirements)
+
+    if not weights:
         return []
-
-    if weights is None:
-        weights = DEFAULT_WEIGHTS.copy()
-
-    weights = normalize_weights(weights)
 
     pqc_results = []
 
-    for result in results:
+    for result in results or []:
+        info = get_security_info(result["algorithm"])
 
-        security = get_security_info(
-            result["algorithm"]
-        )
-
-        if security["quantum_resistant"]:
+        if info["quantum_resistant"]:
             pqc_results.append(result)
 
     if not pqc_results:
@@ -96,152 +101,141 @@ def score_candidates(
         for result in pqc_results
     ]
 
-    scored_candidates = []
+    candidates = []
 
     for result in pqc_results:
+        component_scores = {
+            "security": 100.0,
+            "signing": normalize_score(
+                result["sign_time"],
+                signing_values,
+            ),
+            "verification": normalize_score(
+                result["verify_time"],
+                verification_values,
+            ),
+            "signature_size": normalize_score(
+                result["signature_size"],
+                signature_size_values,
+            ),
+            "key_generation": normalize_score(
+                result["keygen_time"],
+                keygen_values,
+            ),
+        }
 
-        signing_score = normalize_score(
-            result["sign_time"],
-            signing_values
+        total_score = sum(
+            component_scores[key] * weight
+            for key, weight in weights.items()
         )
 
-        verification_score = normalize_score(
-            result["verify_time"],
-            verification_values
-        )
-
-        signature_size_score = normalize_score(
-            result["signature_size"],
-            signature_size_values
-        )
-
-        keygen_score = normalize_score(
-            result["keygen_time"],
-            keygen_values
-        )
-
-        # All candidates reaching this point are already
-        # classified as quantum-resistant.
-        security_score = 100.0
-
-        total_score = (
-            signing_score * weights["signing"]
-            + verification_score * weights["verification"]
-            + signature_size_score * weights["signature_size"]
-            + keygen_score * weights["key_generation"]
-            + security_score * weights["security"]
-        )
-
-        scored_candidates.append(
+        candidates.append(
             {
                 "algorithm": result["algorithm"],
                 "score": total_score,
-                "scores": {
-                    "security": security_score,
-                    "signing": signing_score,
-                    "verification": verification_score,
-                    "signature_size": signature_size_score,
-                    "key_generation": keygen_score
-                }
+                "scores": component_scores,
             }
         )
 
-    scored_candidates.sort(
-        key=lambda x: x["score"],
-        reverse=True
+    candidates.sort(
+        key=lambda item: item["score"],
+        reverse=True,
     )
 
-    return scored_candidates
+    return candidates
 
 
 def generate_recommendation(
     results,
     current_algorithm,
-    weights=None
+    selected_requirements=None,
 ):
     """
-    Generate a PQC migration recommendation.
+    Keep two questions separate:
 
-    If weights are not provided, the default weighting
-    model is used.
+    1. Is migration required for quantum security?
+    2. Which PQC candidate best matches the selected benchmark requirements?
     """
+    weights = build_weights(selected_requirements)
+
+    if not weights:
+        return {
+            "current_algorithm": current_algorithm,
+            "migration_required": False,
+            "decision": "REQUIREMENTS NOT SELECTED",
+            "recommended_algorithm": None,
+            "reason": (
+                "Select at least one evaluation requirement before "
+                "running the migration analysis."
+            ),
+            "score": 0.0,
+            "scores": {},
+            "weights": {},
+            "candidates": [],
+        }
+
+    candidates = score_candidates(
+        results,
+        selected_requirements,
+    )
+
+    if not candidates:
+        return {
+            "current_algorithm": current_algorithm,
+            "migration_required": False,
+            "decision": "NO PQC DATA",
+            "recommended_algorithm": None,
+            "reason": (
+                "No quantum-resistant benchmark candidates were found. "
+                "Run the benchmark and try again."
+            ),
+            "score": 0.0,
+            "scores": {},
+            "weights": weights,
+            "candidates": [],
+        }
 
     current_security = get_security_info(
         current_algorithm
     )
 
-    if current_security["quantum_resistant"]:
-
-        return {
-            "current_algorithm": current_algorithm,
-            "migration_required": False,
-            "recommended_algorithm": current_algorithm,
-            "reason": (
-                "The current algorithm is already "
-                "classified as quantum-resistant."
-            ),
-            "candidates": []
-        }
-
-    candidates = score_candidates(
-        results,
-        weights
-    )
-
-    if not candidates:
-
-        return {
-            "current_algorithm": current_algorithm,
-            "migration_required": True,
-            "recommended_algorithm": None,
-            "reason": (
-                "No quantum-resistant candidates "
-                "were found."
-            ),
-            "candidates": []
-        }
-
     recommended = candidates[0]
+
+    if not current_security["quantum_resistant"]:
+        migration_required = True
+        decision = "MIGRATION REQUIRED"
+        reason = (
+            f"{current_algorithm} is not classified as quantum-resistant. "
+            f"{recommended['algorithm']} is the highest-scoring "
+            "quantum-resistant candidate for the selected requirements."
+        )
+
+    elif current_algorithm == recommended["algorithm"]:
+        migration_required = False
+        decision = "NO CHANGE REQUIRED"
+        reason = (
+            f"{current_algorithm} is already quantum-resistant and is the "
+            "highest-scoring candidate for the selected requirements."
+        )
+
+    else:
+        migration_required = False
+        decision = "OPTIONAL OPTIMIZATION"
+        reason = (
+            f"{current_algorithm} is already quantum-resistant, so a "
+            "quantum-security migration is not required. "
+            f"{recommended['algorithm']} scores higher for the selected "
+            "benchmark requirements."
+        )
 
     return {
         "current_algorithm": current_algorithm,
-        "migration_required": True,
+        "migration_required": migration_required,
+        "decision": decision,
         "recommended_algorithm": recommended["algorithm"],
-        "reason": (
-            "The recommended algorithm provides the "
-            "highest weighted score among the evaluated "
-            "quantum-resistant candidates."
-        ),
+        "reason": reason,
         "score": recommended["score"],
         "scores": recommended["scores"],
-        "weights": normalize_weights(
-            weights
-            if weights is not None
-            else DEFAULT_WEIGHTS
-        ),
-        "candidates": candidates
+        "weights": weights,
+        "candidates": candidates,
     }
-
-
-if __name__ == "__main__":
-
-    import json
-
-    with open(
-        "results/benchmark_results.json",
-        "r"
-    ) as file:
-
-        results = json.load(file)
-
-    recommendation = generate_recommendation(
-        results,
-        "ECDSA"
-    )
-
-    print(
-        json.dumps(
-            recommendation,
-            indent=4
-        )
-    )
