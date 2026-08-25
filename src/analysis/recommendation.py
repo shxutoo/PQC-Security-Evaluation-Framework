@@ -1,7 +1,7 @@
 from src.analysis.security import get_security_info
 
 
-WEIGHTS = {
+DEFAULT_WEIGHTS = {
     "signing": 0.20,
     "verification": 0.15,
     "signature_size": 0.15,
@@ -10,7 +10,30 @@ WEIGHTS = {
 }
 
 
+def normalize_weights(weights):
+    """
+    Normalize weights so their total equals 1.0.
+    """
+
+    total = sum(weights.values())
+
+    if total <= 0:
+        raise ValueError(
+            "At least one weight must be greater than zero."
+        )
+
+    return {
+        key: value / total
+        for key, value in weights.items()
+    }
+
+
 def normalize_score(value, values):
+    """
+    Convert a metric value into a 0-100 score.
+    Lower values receive higher scores.
+    """
+
     best = min(values)
 
     if value == 0:
@@ -19,10 +42,25 @@ def normalize_score(value, values):
     return (best / value) * 100
 
 
-def score_candidates(results):
+def score_candidates(
+    results,
+    weights=None
+):
+    """
+    Score all quantum-resistant candidates.
+
+    weights:
+        Optional dictionary controlling the importance
+        of each performance metric.
+    """
 
     if not results:
         return []
+
+    if weights is None:
+        weights = DEFAULT_WEIGHTS.copy()
+
+    weights = normalize_weights(weights)
 
     pqc_results = []
 
@@ -82,14 +120,16 @@ def score_candidates(results):
             keygen_values
         )
 
+        # All candidates reaching this point are already
+        # classified as quantum-resistant.
         security_score = 100.0
 
         total_score = (
-            signing_score * WEIGHTS["signing"]
-            + verification_score * WEIGHTS["verification"]
-            + signature_size_score * WEIGHTS["signature_size"]
-            + keygen_score * WEIGHTS["key_generation"]
-            + security_score * WEIGHTS["security"]
+            signing_score * weights["signing"]
+            + verification_score * weights["verification"]
+            + signature_size_score * weights["signature_size"]
+            + keygen_score * weights["key_generation"]
+            + security_score * weights["security"]
         )
 
         scored_candidates.append(
@@ -114,7 +154,17 @@ def score_candidates(results):
     return scored_candidates
 
 
-def generate_recommendation(results, current_algorithm):
+def generate_recommendation(
+    results,
+    current_algorithm,
+    weights=None
+):
+    """
+    Generate a PQC migration recommendation.
+
+    If weights are not provided, the default weighting
+    model is used.
+    """
 
     current_security = get_security_info(
         current_algorithm
@@ -133,7 +183,10 @@ def generate_recommendation(results, current_algorithm):
             "candidates": []
         }
 
-    candidates = score_candidates(results)
+    candidates = score_candidates(
+        results,
+        weights
+    )
 
     if not candidates:
 
@@ -161,6 +214,11 @@ def generate_recommendation(results, current_algorithm):
         ),
         "score": recommended["score"],
         "scores": recommended["scores"],
+        "weights": normalize_weights(
+            weights
+            if weights is not None
+            else DEFAULT_WEIGHTS
+        ),
         "candidates": candidates
     }
 
