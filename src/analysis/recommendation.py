@@ -30,8 +30,8 @@ def build_weights(selected_requirements):
     """
     Checkboxes are binary inclusion controls.
 
-    Every selected requirement receives equal weight, so the behavior is easy
-    to explain and reproduce in the thesis. Unselected requirements receive 0.
+    Every selected requirement receives equal weight.
+    Unselected requirements receive zero weight.
 
     Example:
         ["signing", "verification"] ->
@@ -151,10 +151,8 @@ def generate_recommendation(
     selected_requirements=None,
 ):
     """
-    Keep two questions separate:
-
-    1. Is migration required for quantum security?
-    2. Which PQC candidate best matches the selected benchmark requirements?
+    Generate the migration decision and rank PQC candidates
+    according to the selected requirements.
     """
     weights = build_weights(selected_requirements)
 
